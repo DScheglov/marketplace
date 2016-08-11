@@ -38,9 +38,9 @@ var BuyOfferSchema = new Schema({
 var CommitmentStatusEnum = ['blank', 'made', 'executed'];
 var CommitmentSchema = new Schema({
   bookValue: {type: Number, required: true}, // the amount of asset book value to be sold/purhcased
-  investment: {type: Number, required: true}, // the amount of investes to be withdrawn from Buyers Account
+  investment: {type: Number, required: true}, // the amount of investment to be withdrawn from Buyers Account
   assetPrice: {type: Numver, required: true}, // the amount of assetPrice to be paid to Seller
-  intermediaryMargin: {type: Number, required: true},
+  intermediaryMargin: {type: Number, required: true}, // the amount of margin to be left for intermediary
   status: {type: String, rquired: true, enum: CommitmentStatusEnum}
 });
 
@@ -89,6 +89,28 @@ function DCF(flows) {
   this.flows = flows;
 };
 
-DCF.prototype.by = function (rates) {
-  
+DCF.prototype.by = function (rates, d0) {
+  d0 = d0 || Date.now();
+  if (typeof(rates) === 'number') {
+    rates = {$: rates}
+  };
+  const rs = Object.keys(rates);
+  const results = rs.reduce((rateName, res) => {
+    res[rateName] = 0;
+    return res;
+  }, {});
+
+  for (let flow of this.flows) {
+    let pwIndex = (flow.date.valueOf() - d0) / 365;
+    for (let dr of rs) {
+      results[dr] += flow.value / Math.pow(1 + rates[dr], pwIndex)
+    }
+  };
+
+  if (rs.length === 1 && typeof(results.$) !== 'undefined') {
+    return results.$;
+  }
+
+  return results;
+
 }
