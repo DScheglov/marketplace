@@ -18,9 +18,10 @@
     "async": "^1.5.2",
     "body-parser": "^1.14.1",
     "express": "^4.13.3",
+    "fin-rounds": "^0.1.0",
+    "merest": "*",
     "method-override": "^2.3.5",
-    "mongoose": "^4.4.10",
-    "merest": "*"
+    "mongoose": "^4.4.10"
   },
   "devDependencies": {
     "istanbul": "^0.4.3",

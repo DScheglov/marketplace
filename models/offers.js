@@ -1,5 +1,10 @@
 var mongoose = require('mongoose');
 var AssetSchema = require('./assets').AssetSchema;
+var Round = require('fin-rounds').Round;
+
+// Creating rounding function with banker's algorithm and
+// 2-digits after coma precision
+var round = new Round('bank', 2);
 
 var Schema = mongoose.Schema;
 
@@ -64,8 +69,8 @@ CommitmentSchema.statics.create = function(sellOffer, buyOffer, callback) {
 
   if (buyWholeLoan) {
     c.bookValue = s.bookValue;
-    c.investment = c.bookValue * priceRates
-    c.assetPrice = c.bookValue * s.relateiveFlows.discountBy
+    c.investment = round(c.bookValue * priceRates.apr);
+    c.assetPrice = round(c.bookValue * priceRates.imr);
   } else {
 
   }
@@ -82,7 +87,7 @@ module.exports = exports = {
 }
 
 function discount(flows) {
-
+  return new DCF(flows);
 };
 
 function DCF(flows) {
