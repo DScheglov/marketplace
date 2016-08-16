@@ -16,7 +16,7 @@ const BuyOfferSchema = new Schema({
   maxInvestmentPerLoan: Number,
   buyWholeAsset: {type: Boolean, 'default': false},
   status: {type: String, enum: OfferStatusEnum, required: true},
-  expared: {type: Date, required: true},
+  expired: {type: Date, required: true},
   updated: {type: Date, 'default': Date.now},
   pendingCommitments: [{type: Schema.Types.ObjectId, ref: 'Commitment'}]
 });

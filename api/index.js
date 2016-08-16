@@ -4,10 +4,15 @@ const models = require('../models');
 
 const api = new merest.ModelAPIExpress();
 api.expose(models.Trader);
-api.expose(models.SellOffer, {expose: {
-  place: 'get'
-}});
-api.expose(models.BuyOffer);
-api.expose(models.Commitment);
+api.expose(models.SellOffer, {
+  expose: {place: 'get'},
+  populate: "trader traders"
+});
+api.expose(models.BuyOffer, {
+  populate: "trader"
+});
+api.expose(models.Commitment, {
+  populate: "seller buyer"
+});
 
 module.exports = exports = api;

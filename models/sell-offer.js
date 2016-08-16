@@ -1,10 +1,12 @@
 'use strict';
 
+const assert = require('assert');
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const dcf = require('../lib/dcf');
+const promisify = require('../lib/promisify');
 
-const OfferStatusEnum = ['blank', 'preplaced', 'placed', 'failed', 'canceled', 'succeeded'];
+const OfferStatusEnum = ['blank', 'preplaced', 'placed', 'failed', 'canceled', 'closed'];
 
 const SellOfferSchema = new Schema({
   trader: {type: Schema.Types.ObjectId, ref: 'Trader', required: true},
@@ -18,7 +20,7 @@ const SellOfferSchema = new Schema({
   maxSharedAPR: {type: Number, required: true},
   dividable: {type: Boolean, 'default': true},
   status: {type: String, enum: OfferStatusEnum, required: true},
-  expared: {type: Date, required: true},
+  expired: {type: Date, required: true},
   updated: {type: Date, 'default': Date.now},
   relativeFlows: [{value: Number, date: Date}],
   cachedPrices: Schema.Types.Mixed,
@@ -86,35 +88,81 @@ function normalizeRate(rate, rateType) {
 
 
 function SellOffer__place(callback) {
+
+  callback = arguments[arguments.length - 1];
+  if (!callback || !(callback instanceof Function)) {
+    return promisify(SellOffer__place, this, arguments);
+  }
+
   let BuyOffer = mongoose.model('BuyOffer');
   let Commitment = mongoose.model('Commitment');
   let s = this;
-  callback = arguments[arguments.length - 1];
+
+  try {
+    assert.notEqual(s.status, 'closed');
+    assert.ok(s.bookValue > 0);
+  } catch(err) {
+    return callback(
+      new Error('Status of SellOffer doesn\'t allow to place it on marketplace')
+    );
+  }
+
+
   this.status = 'preplaced';
+  this.updated = new Date();
   return this.save()
     .then(()=>{
-      var stream = BuyOffer.find({
+      let q = {
         status: 'placed',
-        assetClasses: this.assetClass,
-        //expired: {$gt: Date.now},
-        intermediaryAPR: {$lte: this.maxSharedAPR},
-        trader: {$nin: this.traders.concat(this.trader)}
-      }).sort('updated').stream();
+        assetClasses: s.assetClass,
+        //expired: {$gt: new Date()},
+        intermediaryAPR: {$lte: s.maxSharedAPR},
+        trader: {$nin: s.traders.concat(s.trader)}
+      };
+      const cursor = BuyOffer.find(q).sort('updated').stream();
 
-      stream.on('data', (b)=>{
-        stream.pause();
-        Commitment.create(s, b, (err, c) => {
-          if (err) return stream.resume();
-          c.process((err)=>{
-            stream.resume();
-          });
+      cursor.on('data', (b)=>{
+        cursor.pause();
+        Commitment.create(s, b)
+          .then(
+            (c)=>c.process(),
+            (e)=>{
+              console.dir(e);
+            })
+          .then(
+            ()=>SellOffer.findById(s._id),
+            (e)=>{
+              console.dir(e);
+              return SellOffer.findById(s._id);
+            }
+          )
+          .then((ss)=>{
+            s = ss;
+            if (s.status === 'closed' || s.bookValue === 0) {
+              return cursor.close();
+            }
+            return cursor.resume();
+          })
+          .catch(err=>cursor.resume())
         });
+
+      return cursor.on('close', (err) => {
+        if (err) return callback(err);
+        SellOffer.findById(s._id).then((ss)=>{
+          if (ss.status === 'preplaced') {
+            ss.status = 'placed';
+            ss.updated = new Date();
+            return ss.save(callback);
+          }
+          return callback(null, ss);
+        });
+
       });
 
-      return stream.on('close', (err)=>{
-        return callback(err, s);
-      });
-
+    })
+    .catch((err) => {
+      console.dir(err);
+      return callback(err);
     });
 }
 

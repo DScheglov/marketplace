@@ -1,12 +1,12 @@
-var mongoose = require('mongoose');
-var express = require('express');
-var bodyParser = require('body-parser');
-var methodOverride = require('method-override'); // to support HTTP OPTIONS
-var api = require('./api');
+const mongoose = require('./mongoose-promise')(require('mongoose'));
+const express = require('express');
+const bodyParser = require('body-parser');
+const methodOverride = require('method-override'); // to support HTTP OPTIONS
+const api = require('./api');
 
 mongoose.connect('mongodb://localhost/p2p-marketplace');
 
-var app = express();
+const app = express();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));

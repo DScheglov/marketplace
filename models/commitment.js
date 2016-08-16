@@ -3,11 +3,14 @@
 const mongoose = require('mongoose');
 const async = require('async');
 const Round = require('fin-rounds').Round;
+const promisify = require('../lib/promisify');
 
 const Schema = mongoose.Schema;
 
 const CommitmentStatusEnum = ['blank', 'pending', 'premade', 'made', 'canceling', 'executed', 'canceled', 'failed'];
 const CommitmentSchema = new Schema({
+  assetId: {type: String, required: true},
+  cessionId: {type: String, required: false},
   sellOffer: {type: Schema.Types.ObjectId, ref: 'SellOffer', required: true},
   buyOffer: {type: Schema.Types.ObjectId, ref: 'BuyOffer', required: false},
   seller: {type: Schema.Types.ObjectId, ref: 'Trader', required: true},
@@ -16,6 +19,7 @@ const CommitmentSchema = new Schema({
   investment: {type: Number, required: true, default: 0}, // the amount of investment to be withdrawn from Buyers Account
   assetPrice: {type: Number, required: true, default: 0}, // the amount of assetPrice to be paid to Seller
   intermediaryMargin: {type: Number, required: true, default: 0}, // the amount of margin to be left for intermediary
+  portfolioId: {type: String, required: true},
   status: {type: String, rquired: true, enum: CommitmentStatusEnum},
   statusDescription: String,
   updated: {type: Date, required: true, 'default': Date.now}
@@ -36,6 +40,12 @@ module.exports = exports = {
 const round = new Round('bank', 2);
 
 function Commitment__static_create(sellOffer, buyOffer, callback) {
+
+  callback = arguments[arguments.length - 1];
+  if (!callback || !(callback instanceof Function)) {
+    return promisify(Commitment__static_create, this, arguments);
+  }
+
   let s = sellOffer;
   let b = buyOffer;
   let c = new Commitment({
@@ -43,6 +53,9 @@ function Commitment__static_create(sellOffer, buyOffer, callback) {
     buyOffer: b,
     seller: s.trader,
     buyer: b.trader,
+    assetId: s.assetId,
+    cessionId: s.cessionId,
+    portfolioId: b.portfolioId,
     status: 'blank'
   });
 
@@ -78,15 +91,19 @@ function Commitment__static_create(sellOffer, buyOffer, callback) {
     c.assetPrice = round(c.bookValue * price.toBuy);
     c.intermediaryMargin = round(c.investment - c.assetPrice);
 
+    if (c.bookValue === 0 || c.investment === 0 || c.assetPrice === 0) {
+      throw new Error('Couldn\'t create commitment for zero amounts')
+    };
+
   } catch(err) {
     return callback(err, null);
   };
 
   if (s.isModified('cachedPrices')) {
-    return s.save()
-      .then(()=>c.save())
-      .then(()=>callback(null, c))
-      .catch(callback);
+      return s.save()
+        .then(()=>c.save())
+        .then(()=>callback(null, c))
+        .catch(callback);
   }
 
   return c.save(callback);
@@ -98,6 +115,17 @@ function Commitment__process(callback) {
   let c = this;
 
   callback = arguments[arguments.length - 1];
+
+  if (!callback || !(callback instanceof Function)) {
+    var args = Array.prototype.slice.call(arguments);
+    return new Promise((resolve, reject) => {
+      args.push((err)=>{
+        if (err) return reject(err);
+        resolve();
+      });
+      return Commitment__process.apply(c, args);
+    });
+  }
 
   switch (this.status) {
     case "blank":  return c_start();
@@ -158,7 +186,7 @@ function Commitment__process(callback) {
 
   function c_fail(err) {
     let fail_err = err;
-    if (err) this.statusDescription = err.message;
+    if (err) c.statusDescription = err.message;
     c.status = "failed";
     c.updated = new Date();
     return c.save(function(err) {
@@ -207,7 +235,7 @@ function updateBuyOffer(next) {
       new Error('Buy-Offer status doesn\'t allow to process commitments')
     );
     if (b.volume < 0) return next(
-      new Error('Buy-offer was sexecuted before commitment')
+      new Error('Buy-offer was executed before commitment')
     );
     next();
   })
@@ -220,17 +248,25 @@ function markPremade(next) {
 };
 
 function releaseSellOffer(next) {
-  mongoose.model('SellOffer').findOneAndUpdate({
+  return mongoose.model('SellOffer').findOneAndUpdate({
     _id: this.sellOffer,
     pendingCommitments: this._id
   },{
     $pull: {pendingCommitments: this._id},
     $set: {updated: new Date()}
-  }, _do(next));
+  }, {new: true}, (err, s) => {
+    if (err) return next(err);
+    if (s.bookValue === 0) {
+      s.status = 'closed';
+      s.updated = new Date();
+      return s.save(_do(next));
+    };
+    return next();
+  });
 };
 
 function releaseBuyOffer(next) {
-  mongoose.model('BuyOffer').findOneAndUpdate({
+  return mongoose.model('BuyOffer').findOneAndUpdate({
     _id: this.buyOffer,
     pendingCommitments: this._id
   },{
@@ -247,12 +283,12 @@ function markMade(next) {
 
 function markCanceling(next) {
   this.status = "canceling";
-  this.lastModified = new Date();
-  this.save(_do(next));
+  this.updated = new Date();
+  return this.save(_do(next));
 };
 
 function rollbackSellOffer(next) {
-  mongoose.model('SellOffer').update({
+  return mongoose.model('SellOffer').update({
     _id: this.sellOffer,
     traders: this.buyer,
     pendingCommitments: this._id
@@ -266,7 +302,7 @@ function rollbackSellOffer(next) {
 };
 
 function rollbackBuyOffer(next) {
-  mongoose.model('BuyOffer').update({
+  return mongoose.model('BuyOffer').update({
     _id: this.buyOffer,
     pendingCommitments: this._id
   }, {
