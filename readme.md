@@ -264,3 +264,486 @@ Log:
 57b6c3e9dcac48150973ea8f: loan-123 <=> 3A-P:3 -- inv: $299.99, aP: $295.26, bV: $219.78, ]> $4.73, -- made
 57b6c3e9dcac48150973ea90: loan-123 <=> IL-EUR-AB:4A -- inv: $278.33, aP: $273.94, bV: $203.9100000000005, ]> $4.39, -- made
 ```
+
+
+### Checking out commitments
+
+Request:
+```shell
+GET /api/v1/commitments?sellOffer=57b2f17bbf2f1483d0bba6b2 HTTP/1.1
+HOST: localhost:1337
+```
+
+Response:
+```javascript
+[  
+   {  
+      "_id":"57b6c3e8dcac48150973ea86",
+      "sellOffer":"57b2f17bbf2f1483d0bba6b2",
+      "buyOffer":"57b306e98cff26f1d0b50519",
+      "seller":{  
+         "_id":"57b1ed6598b8be7cae69c365",
+         "title":"Trader 1A",
+         "code":"1A",
+         "__v":0
+      },
+      "buyer":{  
+         "_id":"57b2e42c7db03c00cd5a9dc3",
+         "title":"Trader 13A",
+         "code":"13A",
+         "__v":0
+      },
+      "assetId":"loan-123",
+      "portfolioId":"IL-EUR-AB:13A",
+      "status":"made",
+      "__v":0,
+      "updated":"2016-08-19T08:31:36.937Z",
+      "intermediaryMargin":0.65,
+      "assetPrice":24.34,
+      "investment":24.99,
+      "bookValue":18.31
+   },
+   {  
+      "_id":"57b6c3e8dcac48150973ea87",
+      "sellOffer":"57b2f17bbf2f1483d0bba6b2",
+      "buyOffer":"57b307008cff26f1d0b5051a",
+      "seller":{  
+         "_id":"57b1ed6598b8be7cae69c365",
+         "title":"Trader 1A",
+         "code":"1A",
+         "__v":0
+      },
+      "buyer":{  
+         "_id":"57b2e4327db03c00cd5a9dc4",
+         "title":"Trader 14A",
+         "code":"14A",
+         "__v":0
+      },
+      "assetId":"loan-123",
+      "portfolioId":"IL-EUR-AB:14A",
+      "status":"made",
+      "__v":0,
+      "updated":"2016-08-19T08:31:36.976Z",
+      "intermediaryMargin":0.65,
+      "assetPrice":24.34,
+      "investment":24.99,
+      "bookValue":18.31
+   },
+   {  
+      "_id":"57b6c3e8dcac48150973ea88",
+      "sellOffer":"57b2f17bbf2f1483d0bba6b2",
+      "buyOffer":"57b3072a8cff26f1d0b5051b",
+      "seller":{  
+         "_id":"57b1ed6598b8be7cae69c365",
+         "title":"Trader 1A",
+         "code":"1A",
+         "__v":0
+      },
+      "buyer":{  
+         "_id":"57b2e4397db03c00cd5a9dc5",
+         "title":"Trader 15A",
+         "code":"15A",
+         "__v":0
+      },
+      "assetId":"loan-123",
+      "portfolioId":"IL-EUR-AB:15A",
+      "status":"made",
+      "__v":0,
+      "updated":"2016-08-19T08:31:37.010Z",
+      "intermediaryMargin":0.65,
+      "assetPrice":24.34,
+      "investment":24.99,
+      "bookValue":18.31
+   },
+   {  
+      "_id":"57b6c3e9dcac48150973ea89",
+      "sellOffer":"57b2f17bbf2f1483d0bba6b2",
+      "buyOffer":"57b307398cff26f1d0b5051c",
+      "seller":{  
+         "_id":"57b1ed6598b8be7cae69c365",
+         "title":"Trader 1A",
+         "code":"1A",
+         "__v":0
+      },
+      "buyer":{  
+         "_id":"57b2e43f7db03c00cd5a9dc6",
+         "title":"Trader 16A",
+         "code":"16A",
+         "__v":0
+      },
+      "assetId":"loan-123",
+      "portfolioId":"IL-EUR-AB:16A",
+      "status":"made",
+      "__v":0,
+      "updated":"2016-08-19T08:31:37.049Z",
+      "intermediaryMargin":0.65,
+      "assetPrice":24.34,
+      "investment":24.99,
+      "bookValue":18.31
+   },
+   {  
+      "_id":"57b6c3e9dcac48150973ea8a",
+      "sellOffer":"57b2f17bbf2f1483d0bba6b2",
+      "buyOffer":"57b307488cff26f1d0b5051d",
+      "seller":{  
+         "_id":"57b1ed6598b8be7cae69c365",
+         "title":"Trader 1A",
+         "code":"1A",
+         "__v":0
+      },
+      "buyer":{  
+         "_id":"57b2e4447db03c00cd5a9dc7",
+         "title":"Trader 17A",
+         "code":"17A",
+         "__v":0
+      },
+      "assetId":"loan-123",
+      "portfolioId":"IL-EUR-AB:17A",
+      "status":"made",
+      "__v":0,
+      "updated":"2016-08-19T08:31:37.088Z",
+      "intermediaryMargin":0.65,
+      "assetPrice":24.34,
+      "investment":24.99,
+      "bookValue":18.31
+   },
+   {  
+      "_id":"57b6c3e9dcac48150973ea8b",
+      "sellOffer":"57b2f17bbf2f1483d0bba6b2",
+      "buyOffer":"57b307598cff26f1d0b5051e",
+      "seller":{  
+         "_id":"57b1ed6598b8be7cae69c365",
+         "title":"Trader 1A",
+         "code":"1A",
+         "__v":0
+      },
+      "buyer":{  
+         "_id":"57b2e4497db03c00cd5a9dc8",
+         "title":"Trader 18A",
+         "code":"18A",
+         "__v":0
+      },
+      "assetId":"loan-123",
+      "portfolioId":"IL-EUR-AB:18A",
+      "status":"made",
+      "__v":0,
+      "updated":"2016-08-19T08:31:37.123Z",
+      "intermediaryMargin":0.65,
+      "assetPrice":24.34,
+      "investment":24.99,
+      "bookValue":18.31
+   },
+   {  
+      "_id":"57b6c3e9dcac48150973ea8c",
+      "sellOffer":"57b2f17bbf2f1483d0bba6b2",
+      "buyOffer":"57b3076b8cff26f1d0b5051f",
+      "seller":{  
+         "_id":"57b1ed6598b8be7cae69c365",
+         "title":"Trader 1A",
+         "code":"1A",
+         "__v":0
+      },
+      "buyer":{  
+         "_id":"57b2e4507db03c00cd5a9dc9",
+         "title":"Trader 19A",
+         "code":"19A",
+         "__v":0
+      },
+      "assetId":"loan-123",
+      "portfolioId":"IL-EUR-AB:19A",
+      "status":"made",
+      "__v":0,
+      "updated":"2016-08-19T08:31:37.155Z",
+      "intermediaryMargin":0.65,
+      "assetPrice":24.34,
+      "investment":24.99,
+      "bookValue":18.31
+   },
+   {  
+      "_id":"57b6c3e9dcac48150973ea8d",
+      "sellOffer":"57b2f17bbf2f1483d0bba6b2",
+      "buyOffer":"57b3077c8cff26f1d0b50520",
+      "seller":{  
+         "_id":"57b1ed6598b8be7cae69c365",
+         "title":"Trader 1A",
+         "code":"1A",
+         "__v":0
+      },
+      "buyer":{  
+         "_id":"57b2e4577db03c00cd5a9dca",
+         "title":"Trader 20A",
+         "code":"20A",
+         "__v":0
+      },
+      "assetId":"loan-123",
+      "portfolioId":"IL-EUR-AB:20A",
+      "status":"made",
+      "__v":0,
+      "updated":"2016-08-19T08:31:37.185Z",
+      "intermediaryMargin":0.65,
+      "assetPrice":24.34,
+      "investment":24.99,
+      "bookValue":18.31
+   },
+   {  
+      "_id":"57b6c3e9dcac48150973ea8e",
+      "sellOffer":"57b2f17bbf2f1483d0bba6b2",
+      "buyOffer":"57b1f0ea01a1d836af5a5c9c",
+      "seller":{  
+         "_id":"57b1ed6598b8be7cae69c365",
+         "title":"Trader 1A",
+         "code":"1A",
+         "__v":0
+      },
+      "buyer":{  
+         "_id":"57b1ed7998b8be7cae69c366",
+         "title":"Trader 2A",
+         "code":"2A",
+         "__v":0
+      },
+      "assetId":"loan-123",
+      "portfolioId":"1A-P:1",
+      "status":"made",
+      "__v":0,
+      "updated":"2016-08-19T08:31:37.226Z",
+      "intermediaryMargin":0.16,
+      "assetPrice":9.83,
+      "investment":9.99,
+      "bookValue":7.32
+   },
+   {  
+      "_id":"57b6c3e9dcac48150973ea8f",
+      "sellOffer":"57b2f17bbf2f1483d0bba6b2",
+      "buyOffer":"57b2e4ff7db03c00cd5a9dcc",
+      "seller":{  
+         "_id":"57b1ed6598b8be7cae69c365",
+         "title":"Trader 1A",
+         "code":"1A",
+         "__v":0
+      },
+      "buyer":{  
+         "_id":"57b2e3ef7db03c00cd5a9db9",
+         "title":"Trader 3A",
+         "code":"3A",
+         "__v":0
+      },
+      "assetId":"loan-123",
+      "portfolioId":"3A-P:3",
+      "status":"made",
+      "__v":0,
+      "updated":"2016-08-19T08:31:37.270Z",
+      "intermediaryMargin":4.73,
+      "assetPrice":295.26,
+      "investment":299.99,
+      "bookValue":219.78
+   },
+   {  
+      "_id":"57b6c3e9dcac48150973ea90",
+      "sellOffer":"57b2f17bbf2f1483d0bba6b2",
+      "buyOffer":"57b305b48cff26f1d0b50510",
+      "seller":{  
+         "_id":"57b1ed6598b8be7cae69c365",
+         "title":"Trader 1A",
+         "code":"1A",
+         "__v":0
+      },
+      "buyer":{  
+         "_id":"57b2e3f57db03c00cd5a9dba",
+         "title":"Trader 4A",
+         "code":"4A",
+         "__v":0
+      },
+      "assetId":"loan-123",
+      "portfolioId":"IL-EUR-AB:4A",
+      "status":"made",
+      "__v":0,
+      "updated":"2016-08-19T08:31:37.307Z",
+      "intermediaryMargin":4.39,
+      "assetPrice":273.94,
+      "investment":278.33,
+      "bookValue":203.9100000000005
+   },
+   {  
+      "_id":"57b6c3e8dcac48150973ea7f",
+      "sellOffer":"57b2f17bbf2f1483d0bba6b2",
+      "buyOffer":"57b3062d8cff26f1d0b50512",
+      "seller":{  
+         "_id":"57b1ed6598b8be7cae69c365",
+         "title":"Trader 1A",
+         "code":"1A",
+         "__v":0
+      },
+      "buyer":{  
+         "_id":"57b2e4017db03c00cd5a9dbc",
+         "title":"Trader 6A",
+         "code":"6A",
+         "__v":0
+      },
+      "assetId":"loan-123",
+      "portfolioId":"IL-EUR-AB:6A",
+      "status":"made",
+      "__v":0,
+      "updated":"2016-08-19T08:31:36.639Z",
+      "intermediaryMargin":3.26,
+      "assetPrice":151.74,
+      "investment":155,
+      "bookValue":112.65
+   },
+   {  
+      "_id":"57b6c3e8dcac48150973ea80",
+      "sellOffer":"57b2f17bbf2f1483d0bba6b2",
+      "buyOffer":"57b306578cff26f1d0b50513",
+      "seller":{  
+         "_id":"57b1ed6598b8be7cae69c365",
+         "title":"Trader 1A",
+         "code":"1A",
+         "__v":0
+      },
+      "buyer":{  
+         "_id":"57b2e4077db03c00cd5a9dbd",
+         "title":"Trader 7A",
+         "code":"7A",
+         "__v":0
+      },
+      "assetId":"loan-123",
+      "portfolioId":"IL-EUR-AB:7A",
+      "status":"made",
+      "__v":0,
+      "updated":"2016-08-19T08:31:36.695Z",
+      "intermediaryMargin":0.65,
+      "assetPrice":24.34,
+      "investment":24.99,
+      "bookValue":18.31
+   },
+   {  
+      "_id":"57b6c3e8dcac48150973ea81",
+      "sellOffer":"57b2f17bbf2f1483d0bba6b2",
+      "buyOffer":"57b3066a8cff26f1d0b50514",
+      "seller":{  
+         "_id":"57b1ed6598b8be7cae69c365",
+         "title":"Trader 1A",
+         "code":"1A",
+         "__v":0
+      },
+      "buyer":{  
+         "_id":"57b2e40c7db03c00cd5a9dbe",
+         "title":"Trader 8A",
+         "code":"8A",
+         "__v":0
+      },
+      "assetId":"loan-123",
+      "portfolioId":"IL-EUR-AB:8A",
+      "status":"made",
+      "__v":0,
+      "updated":"2016-08-19T08:31:36.751Z",
+      "intermediaryMargin":0.65,
+      "assetPrice":24.34,
+      "investment":24.99,
+      "bookValue":18.31
+   },
+   {  
+      "_id":"57b6c3e8dcac48150973ea82",
+      "sellOffer":"57b2f17bbf2f1483d0bba6b2",
+      "buyOffer":"57b306978cff26f1d0b50515",
+      "seller":{  
+         "_id":"57b1ed6598b8be7cae69c365",
+         "title":"Trader 1A",
+         "code":"1A",
+         "__v":0
+      },
+      "buyer":{  
+         "_id":"57b2e4137db03c00cd5a9dbf",
+         "title":"Trader 9A",
+         "code":"9A",
+         "__v":0
+      },
+      "assetId":"loan-123",
+      "portfolioId":"IL-EUR-AB:9A",
+      "status":"made",
+      "__v":0,
+      "updated":"2016-08-19T08:31:36.778Z",
+      "intermediaryMargin":0.65,
+      "assetPrice":24.34,
+      "investment":24.99,
+      "bookValue":18.31
+   },
+   {  
+      "_id":"57b6c3e8dcac48150973ea83",
+      "sellOffer":"57b2f17bbf2f1483d0bba6b2",
+      "buyOffer":"57b306a88cff26f1d0b50516",
+      "seller":{  
+         "_id":"57b1ed6598b8be7cae69c365",
+         "title":"Trader 1A",
+         "code":"1A",
+         "__v":0
+      },
+      "buyer":{  
+         "_id":"57b2e41a7db03c00cd5a9dc0",
+         "title":"Trader 10A",
+         "code":"10A",
+         "__v":0
+      },
+      "assetId":"loan-123",
+      "portfolioId":"IL-EUR-AB:10A",
+      "status":"made",
+      "__v":0,
+      "updated":"2016-08-19T08:31:36.816Z",
+      "intermediaryMargin":0.65,
+      "assetPrice":24.34,
+      "investment":24.99,
+      "bookValue":18.31
+   },
+   {  
+      "_id":"57b6c3e8dcac48150973ea84",
+      "sellOffer":"57b2f17bbf2f1483d0bba6b2",
+      "buyOffer":"57b306b88cff26f1d0b50517",
+      "seller":{  
+         "_id":"57b1ed6598b8be7cae69c365",
+         "title":"Trader 1A",
+         "code":"1A",
+         "__v":0
+      },
+      "buyer":{  
+         "_id":"57b2e4207db03c00cd5a9dc1",
+         "title":"Trader 11A",
+         "code":"11A",
+         "__v":0
+      },
+      "assetId":"loan-123",
+      "portfolioId":"IL-EUR-AB:11A",
+      "status":"made",
+      "__v":0,
+      "updated":"2016-08-19T08:31:36.855Z",
+      "intermediaryMargin":0.65,
+      "assetPrice":24.34,
+      "investment":24.99,
+      "bookValue":18.31
+   },
+   {  
+      "_id":"57b6c3e8dcac48150973ea85",
+      "sellOffer":"57b2f17bbf2f1483d0bba6b2",
+      "buyOffer":"57b306ca8cff26f1d0b50518",
+      "seller":{  
+         "_id":"57b1ed6598b8be7cae69c365",
+         "title":"Trader 1A",
+         "code":"1A",
+         "__v":0
+      },
+      "buyer":{  
+         "_id":"57b2e4277db03c00cd5a9dc2",
+         "title":"Trader 12A",
+         "code":"12A",
+         "__v":0
+      },
+      "assetId":"loan-123",
+      "portfolioId":"IL-EUR-AB:12A",
+      "status":"made",
+      "__v":0,
+      "updated":"2016-08-19T08:31:36.899Z",
+      "intermediaryMargin":0.65,
+      "assetPrice":24.34,
+      "investment":24.99,
+      "bookValue":18.31
+   }
+]
+```
