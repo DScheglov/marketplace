@@ -83,8 +83,8 @@ function Commitment__static_create(sellOffer, buyOffer, callback) {
     if (buyWholeAsset) {
       c.bookValue = round(s.bookValue);
     } else {
-      c.bookValue = round(b.maxInvestmentPerLoan / price.toSell);
-      if (c.bookValue - s.bookValue > 0) c.bookValue = s.bookValue;
+      c.bookValue = f_round(b.maxInvestmentPerLoan / price.toSell);
+      if (c.bookValue - s.bookValue > 0) c.bookValue = round(s.bookValue);
     }
     c.investment = round(c.bookValue * price.toSell);
 
@@ -96,7 +96,7 @@ function Commitment__static_create(sellOffer, buyOffer, callback) {
       if (!s.dividable) {
         throw new Error('Not enough investment funds to buy asset');
       }
-      c.investment = b.volume;
+      c.investment = round(b.volume);
       c.bookValue = round(this.investment / price.toSell);
     }
 

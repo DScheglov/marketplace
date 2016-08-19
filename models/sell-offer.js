@@ -1,11 +1,13 @@
 'use strict';
 
-require('schema-emit-async');
+//require('schema-emit-async');
+const async = require('async');
 const assert = require('assert');
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const dcf = require('../lib/dcf');
 const promisify = require('../lib/promisify');
+const $cb = require('../lib/callback');
 
 const OfferStatusEnum = ['blank', 'preplaced', 'placed', 'failed', 'canceled', 'closed'];
 
@@ -33,7 +35,7 @@ SellOfferSchema.methods.getPrice = SellOffer__getPrice;
 SellOfferSchema.methods.place = SellOffer__place;
 SellOfferSchema.virtual('assetPartRatio')
   .get(SellOfferSchema__getAssetPartRatio);
-SellOfferSchema.when('placement', SellOffer__onPlacement);
+//SellOfferSchema.when('placement', SellOffer__onPlacement);
 
 const SellOffer = mongoose.model('SellOffer', SellOfferSchema);
 
@@ -102,23 +104,105 @@ function SellOffer__place(callback) {
     return promisify(SellOffer__place, this, arguments);
   };
 
-  let s = this;
+  let BuyOffer = mongoose.model('BuyOffer');
+  let Commitment = mongoose.model('Commitment');
+  let s = this, commitment;
+  const stop = 'stop';
+  const nextOffer = 'nextOffer';
+
   try {
     assert.notEqual(s.status, 'closed');
     assert.ok(s.bookValue > 0);
-  } catch(err) {
+  } catch (e) {
     return callback(
       new Error('Status of SellOffer doesn\'t allow to place it on marketplace')
     );
   };
 
-  this.emitAsync('placement', this, onEnd);
+  let q = { // Preparing serach criteria
+    status: 'placed',
+    assetClasses: s.assetClass,
+    expired: {$gt: new Date()},
+    intermediaryAPR: {$lte: s.maxSharedAPR},
+    trader: {$nin: s.traders.concat(s.trader)}
+  };
 
-  function onEnd(err, updated) {
-    if (err) return callback(err);
-    if (updated && updated.length && updated[0]) {
-      return updated[0].emitAsync('placement', updated[0], onEnd);
+  // if the Asset is not dividable and it is still whole
+  // we should find Buy-Offers that buys whole loans only
+  if (!s.dividable && s.assetPartRatio === 1) {
+    q.buyWholeAsset = true;
+  };
+
+  async.waterfall([
+    function(next) {
+      s.status = 'preplaced';
+      return s.save(next);
+    },
+    function(ss, next) {
+      next = $cb(arguments);
+      return BuyOffer.find(q).sort('updated').exec(next);
+    },
+    function(offers, next) {
+      next = $cb(arguments);
+      return async.eachSeries(offers,
+        function (b, cb) {
+          cb = $cb(arguments);
+          async.waterfall([
+            function(nx){
+              nx = $cb(arguments);
+              Commitment.create(s, b, (e, c) => {
+                if (e) {
+                  console.log('%s <=> %s: %s',
+                    s.assetId, b.portfolioId, e.message
+                  )
+                  return nx(nextOffer);
+                }
+                nx(null, c);
+              });
+            },
+            function(c, nx) {
+              nx = $cb(arguments);
+              if (!c) nx(nextOffer);
+              return c.process((e, c) => {
+                if (e) {
+                  console.log('%s <=> %s: %s',
+                    s.assetId, b.portfolioId, e.message
+                  )
+                  return nx(nextOffer);
+                }
+                nx(null, c);
+              });
+            },
+            function(c, nx) {
+              nx = $cb(arguments);
+              console.log('%s <=> %s: inv: %d; bV: %d;',
+                c.assetId, c.portfolioId, c.investment, c.bookValue
+              )
+              nx()
+            },
+            function(nx) {
+              nx = $cb(arguments);
+              return SellOffer.findById(s._id).exec(nx);
+            },
+            function(ss, nx) {
+              nx = $cb(arguments);
+              s = ss;
+              if (s.status === 'closed' || s.bookValue === 0) nx(stop);
+              nx();
+            }
+          ], e => {
+            if (e === nextOffer) return cb();
+            if (e && e !== stop) console.dir(e);
+            return cb(e);
+          });
+        }, next
+      )
     }
+  ], err => {
+    if (err && err !== stop) {
+      console.dir(err);
+      return callback(err);
+    };
     SellOffer.findById(s._id).then(s => {
       if (s.status === 'preplaced') {
         s.status = 'placed';
@@ -127,7 +211,7 @@ function SellOffer__place(callback) {
       }
       return callback(null, s);
     })
-  }
+  });
 
 }
 
@@ -143,8 +227,7 @@ function SellOffer__place(callback) {
 function SellOffer__onPlacement(callback) {
   let BuyOffer = mongoose.model('BuyOffer');
   let Commitment = mongoose.model('Commitment');
-  let s = this, commitment, buyOffer;
-  const stop = 'stop-promise-chain'
+  let s = this, commitment;
 
   let q = { // Preparing serach criteria
     status: 'placed',
@@ -167,27 +250,23 @@ function SellOffer__onPlacement(callback) {
       return BuyOffer.findOne(q).sort('updated').exec();
     })
     .then(b =>{ // if BuyOffer found -- creating commitment
-      buyOffer = b;
-      if (!b) throw stop;
+      if (!b) return callback(null, null);
       return Commitment.create(s, b);
     })
     .then(c => { // if Commitment created -- processing it through the offers
       commitment = c;
-      if (c) return c.process();
+      return c.process();
     }, e => { // if Commitment creation failed
-      if (e === stop) throw stop;
-      let b = buyOffer;
       console.log("%s <=> %s -- %s", s.assetId, b.portfolioId, e);
     })
     .then(c => { // if commitment processed successfully
-      if (c) console.log("%s: %s <=> %s -- inv: $%d, aP: $%d, bV: $%d, ]> $%d, -- %s",
+      console.log("%s: %s <=> %s -- inv: $%d, aP: $%d, bV: $%d, ]> $%d, -- %s",
         c._id, c.sellOffer.assetId, c.buyOffer.portfolioId,
         c.investment, c.assetPrice, c.bookValue,
         c.intermediaryMargin,
         c.status
       );
     }, e => {
-      if (e === stop) throw stop;
       let c = commitment;
       if (!c) console.dir(e);
       else console.log("%s: %s <=> %s -- inv: %d, aP: %d, bV: %d ]> %d -- %s: %s > %s",
@@ -202,14 +281,13 @@ function SellOffer__onPlacement(callback) {
     })
     .then(s => {
       if (s.status === 'closed' || s.bookValue === 0) {
-        throw stop;
+        return callback(null, null);
       }
       return callback(null, s);
     })
-    .catch(e => {
-      if (e === stop) return callback(null, null);
-      console.log(e);
-      return callback(e);
+    .catch(err => {
+      console.log(err);
+      return callback(err);
     });
 
 }
