@@ -1,6 +1,17 @@
+const async = require('async');
+const commandLineArgs = require('command-line-args')
 const mongoose = require('./mongoose-promise')(require('mongoose'));
 const models = require('./models');
-const async = require('async');
+
+const optionDefinitions = [
+  { name: 'case', alias: 'c', type: String }
+];
+
+const options = commandLineArgs(optionDefinitions);
+
+options.case = options.case || '20-20-1';
+
+console.log('Using case: ' + options.case);
 
 function initialize(callback) {
   callback = arguments[arguments.length-1];
@@ -33,9 +44,9 @@ function close(callback) {
 async.waterfall([
   initialize,
   fixtures.bind(null, {
-    Trader: require('./fixtures/traders'),
-    BuyOffer: require('./fixtures/buy-offers'),
-    SellOffer: require('./fixtures/sell-offers'),
+    Trader: require('./fixtures/' + options.case + '/traders'),
+    BuyOffer: require('./fixtures/' + options.case + '/buy-offers'),
+    SellOffer: require('./fixtures/' + options.case + '/sell-offers'),
     Commitment: []
   }),
   close

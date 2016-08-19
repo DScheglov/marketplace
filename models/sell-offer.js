@@ -30,8 +30,8 @@ const SellOfferSchema = new Schema({
 
 SellOfferSchema.methods.getPrice = SellOffer__getPrice;
 SellOfferSchema.methods.place = SellOffer__place;
-SellOfferSchema.virtual('loanPartRatio')
-  .get(SellOfferSchema__getLoanPartRatio);
+SellOfferSchema.virtual('assetPartRatio')
+  .get(SellOfferSchema__getAssetPartRatio);
 
 const SellOffer = mongoose.model('SellOffer', SellOfferSchema);
 
@@ -96,7 +96,7 @@ function SellOffer__place(callback) {
 
   let BuyOffer = mongoose.model('BuyOffer');
   let Commitment = mongoose.model('Commitment');
-  let s = this;
+  let s = this, commitment;
 
   try {
     assert.notEqual(s.status, 'closed');
@@ -115,39 +115,70 @@ function SellOffer__place(callback) {
       let q = {
         status: 'placed',
         assetClasses: s.assetClass,
-        //expired: {$gt: new Date()},
+        expired: {$gt: new Date()},
         intermediaryAPR: {$lte: s.maxSharedAPR},
         trader: {$nin: s.traders.concat(s.trader)}
       };
-      const cursor = BuyOffer.find(q).sort('updated').stream();
+
+      // if the Asset is not dividable and it is still whole
+      // we should find Buy-Offers that buys whole loans only
+      if (!s.dividable && s.assetPartRatio === 1) {
+        q.buyWholeAsset = true;
+      };
+
+      const cursor = BuyOffer.find(q).sort('updated').cursor();
 
       cursor.on('data', (b)=>{
         cursor.pause();
         Commitment.create(s, b)
           .then(
-            (c)=>c.process(),
+            (c)=>{
+              commitment = c;
+              return c.process()
+            },
             (e)=>{
-              console.dir(e);
+              console.log("%s <=> %s -- %s",
+                s.assetId, b.portfolioId, e);
             })
           .then(
-            ()=>SellOffer.findById(s._id),
+            (c)=>{
+              if (c) console.log("%s: %s <=> %s -- inv: $%d, aP: $%d, bV: $%d, ]> $%d, -- %s",
+                c._id, c.sellOffer.assetId, c.buyOffer.portfolioId,
+                c.investment, c.assetPrice, c.bookValue,
+                c.intermediaryMargin,
+                c.status
+              );
+              return SellOffer.findById(s._id)
+            },
             (e)=>{
-              console.dir(e);
+              let c = commitment;
+              if (!c) console.dir(e);
+              else console.log("%s: %s <=> %s -- inv: %d, aP: %d, bV: %d ]> %d -- %s: %s > %s",
+                c._id, c.sellOffer.assetId, c.buyOffer.portfolioId,
+                c.investment, c.assetPrice, c.bookValue,
+                c.intermediaryMargin,
+                c.status, c.statusDescription, e
+              )
+
               return SellOffer.findById(s._id);
             }
           )
           .then((ss)=>{
             s = ss;
             if (s.status === 'closed' || s.bookValue === 0) {
-              return cursor.close();
+              return cursor.close().then(
+                ()=>callback(null, s)
+              );
             }
             return cursor.resume();
           })
-          .catch(err=>cursor.resume())
-        });
+          .catch(err=>{
+            console.log(err);
+            return cursor.resume()
+          })
+      });
 
-      return cursor.on('close', (err) => {
-        if (err) return callback(err);
+      const processEnd = () => {
         SellOffer.findById(s._id).then((ss)=>{
           if (ss.status === 'preplaced') {
             ss.status = 'placed';
@@ -155,9 +186,14 @@ function SellOffer__place(callback) {
             return ss.save(callback);
           }
           return callback(null, ss);
-        });
+        })
+      };
 
+      cursor.on('error', (err) => {
+        console.log('Cursor error: '+err);
       });
+
+      return cursor.on('end',  processEnd);
 
     })
     .catch((err) => {
@@ -166,6 +202,6 @@ function SellOffer__place(callback) {
     });
 }
 
-function SellOfferSchema__getLoanPartRatio() {
+function SellOfferSchema__getAssetPartRatio() {
   return this.bookValue / this.totalAssetBookValue;
 }

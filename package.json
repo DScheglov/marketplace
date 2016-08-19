@@ -21,9 +21,10 @@
     "fin-rounds": "^0.1.0",
     "merest": "*",
     "method-override": "^2.3.5",
-    "mongoose": "^4.4.10"
+    "mongoose": "^4.5.9"
   },
   "devDependencies": {
+    "command-line-args": "^3.0.1",
     "istanbul": "^0.4.3",
     "mocha": "^2.4.5"
   }

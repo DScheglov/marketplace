@@ -38,6 +38,7 @@ module.exports = exports = {
 // Creating rounding function with banker's algorithm and
 // 2-digits after coma precision
 const round = new Round('bank', 2);
+const f_round = new Round('floor', 2);
 
 function Commitment__static_create(sellOffer, buyOffer, callback) {
 
@@ -48,37 +49,48 @@ function Commitment__static_create(sellOffer, buyOffer, callback) {
 
   let s = sellOffer;
   let b = buyOffer;
-  let c = new Commitment({
-    sellOffer: s,
-    buyOffer: b,
-    seller: s.trader,
-    buyer: b.trader,
-    assetId: s.assetId,
-    cessionId: s.cessionId,
-    portfolioId: b.portfolioId,
-    status: 'blank'
-  });
-
-  // getting asset prices for intermediary and for investor
-  let price = {
-    toSell: s.getPrice(b.APR, 'annual'), // investors rate
-    toBuy: s.getPrice(b.intermediaryAPR, 'annual') // investors rate + intermediary margin
-  };
-
-  // Identify case when we have to deal with whole asset
-  let buyWholeAsset = !s.dividable || // if we can't to divide the asset
-    (s.loanPartRatio === 1) && // if asset is whole AND
-    (b.buyWholeAsset) // if buyer wants to buy whole loan
-  ;
+  let c, e = null;
 
   try {
+
+    if (s.bookValue === 0 || ['preplaced', 'placed'].indexOf(s.status) < 0) {
+      throw new Error('The sell-offer is not eligible to make Commitments');
+    }
+
+    // getting asset prices for intermediary and for investor
+    let price = {
+      toSell: s.getPrice(b.APR, 'annual'), // investors rate
+      toBuy: s.getPrice(b.intermediaryAPR, 'annual') // investors rate + intermediary margin
+    };
+
+    c = new Commitment({
+      sellOffer: s,
+      buyOffer: b,
+      seller: s.trader,
+      buyer: b.trader,
+      assetId: s.assetId,
+      cessionId: s.cessionId,
+      portfolioId: b.portfolioId,
+      status: 'blank'
+    });
+
+    // Identify case when we have to deal with whole asset
+    let buyWholeAsset = !s.dividable || // if we can't to divide the asset
+      (s.assetPartRatio === 1) && // if asset is whole AND
+      (b.buyWholeAsset) // if buyer wants to buy whole loan
+    ;
+
     if (buyWholeAsset) {
       c.bookValue = s.bookValue;
     } else {
-      c.bookValue = round(b.maxInvestmentPerLoan / price.toSell);
+      c.bookValue = f_round(b.maxInvestmentPerLoan / price.toSell);
       if (c.bookValue - s.bookValue > 0) c.bookValue = s.bookValue;
     }
     c.investment = round(c.bookValue * price.toSell);
+
+    if (!b.buyWholeAsset && c.investment - b.maxInvestmentPerLoan > 0) {
+      throw new Error('Whole asset purchase violates max investment per loan');
+    };
 
     if (c.investment - b.volume > 0) {
       if (!s.dividable) {
@@ -96,17 +108,19 @@ function Commitment__static_create(sellOffer, buyOffer, callback) {
     };
 
   } catch(err) {
-    return callback(err, null);
+    c = null;
+    e = err;
   };
 
   if (s.isModified('cachedPrices')) {
       return s.save()
-        .then(()=>c.save())
-        .then(()=>callback(null, c))
+        .then(()=>c?c.save():Promise.resolve())
+        .then(()=>callback(e, c))
         .catch(callback);
   }
 
-  return c.save(callback);
+  if (c) return c.save(callback);
+  return callback(e, c);
 
 };
 
@@ -117,14 +131,7 @@ function Commitment__process(callback) {
   callback = arguments[arguments.length - 1];
 
   if (!callback || !(callback instanceof Function)) {
-    var args = Array.prototype.slice.call(arguments);
-    return new Promise((resolve, reject) => {
-      args.push((err)=>{
-        if (err) return reject(err);
-        resolve();
-      });
-      return Commitment__process.apply(c, args);
-    });
+    return promisify(Commitment__process, this, arguments);
   }
 
   switch (this.status) {

@@ -1,4 +1,5 @@
 const ObjectId = require("mongoose").Types.ObjectId;
+const ISODate = (d) => new Date(d);
 
 module.exports = exports = [
   {
@@ -18,7 +19,7 @@ module.exports = exports = [
       "IL;EUR;B"
     ],
     "__v" : 0,
-    "expired" : "2016-08-22"
+    "expired" : ISODate("2016-08-22")
   }, {
     "_id" : ObjectId("57b2e4ff7db03c00cd5a9dcc"),
     "trader" : ObjectId("57b2e3ef7db03c00cd5a9db9"),
@@ -36,7 +37,7 @@ module.exports = exports = [
       "IL;EUR;B"
     ],
     "__v" : 0,
-    "expired" : "2016-08-22"
+    "expired" : ISODate("2016-08-22")
   }, {
     "_id" : ObjectId("57b3058f8cff26f1d0b5050f"),
     "trader" : ObjectId("57b2e3ef7db03c00cd5a9db9"),
@@ -47,7 +48,7 @@ module.exports = exports = [
     "maxPriceRate" : 1.25,
     "maxInvestmentPerLoan" : 50,
     "status" : "blank",
-    "expired" : "2016-12-31",
+    "expired" : ISODate("2016-12-31"),
     "pendingCommitments" : [ ],
     "buyWholeAsset" : false,
     "assetClasses" : [
@@ -65,7 +66,7 @@ module.exports = exports = [
     "maxPriceRate" : 1.25,
     "maxInvestmentPerLoan" : 300,
     "status" : "placed",
-    "expired" : "2016-12-31",
+    "expired" : ISODate("2016-12-31"),
     "pendingCommitments" : [ ],
     "buyWholeAsset" : false,
     "assetClasses" : [
@@ -83,7 +84,7 @@ module.exports = exports = [
     "maxPriceRate" : 1.25,
     "maxInvestmentPerLoan" : 100,
     "status" : "blank",
-    "expired" : "2016-12-31",
+    "expired" : ISODate("2016-12-31"),
     "pendingCommitments" : [ ],
     "buyWholeAsset" : false,
     "assetClasses" : [
@@ -101,7 +102,7 @@ module.exports = exports = [
     "maxPriceRate" : 1.25,
     "maxInvestmentPerLoan" : 155,
     "status" : "blank",
-    "expired" : "2016-12-31",
+    "expired" : ISODate("2016-12-31"),
     "pendingCommitments" : [ ],
     "buyWholeAsset" : false,
     "assetClasses" : [
@@ -119,7 +120,7 @@ module.exports = exports = [
     "maxPriceRate" : 1.25,
     "maxInvestmentPerLoan" : 25,
     "status" : "blank",
-    "expired" : "2016-12-31",
+    "expired" : ISODate("2016-12-31"),
     "pendingCommitments" : [ ],
     "buyWholeAsset" : false,
     "assetClasses" : [
@@ -137,7 +138,7 @@ module.exports = exports = [
     "maxPriceRate" : 1.25,
     "maxInvestmentPerLoan" : 25,
     "status" : "blank",
-    "expired" : "2016-12-31",
+    "expired" : ISODate("2016-12-31"),
     "pendingCommitments" : [ ],
     "buyWholeAsset" : false,
     "assetClasses" : [
@@ -155,7 +156,7 @@ module.exports = exports = [
     "maxPriceRate" : 1.25,
     "maxInvestmentPerLoan" : 25,
     "status" : "blank",
-    "expired" : "2016-12-31",
+    "expired" : ISODate("2016-12-31"),
     "pendingCommitments" : [ ],
     "buyWholeAsset" : false,
     "assetClasses" : [
@@ -173,7 +174,7 @@ module.exports = exports = [
     "maxPriceRate" : 1.25,
     "maxInvestmentPerLoan" : 25,
     "status" : "blank",
-    "expired" : "2016-12-31",
+    "expired" : ISODate("2016-12-31"),
     "pendingCommitments" : [ ],
     "buyWholeAsset" : false,
     "assetClasses" : [
@@ -191,7 +192,7 @@ module.exports = exports = [
     "maxPriceRate" : 1.25,
     "maxInvestmentPerLoan" : 25,
     "status" : "blank",
-    "expired" : "2016-12-31",
+    "expired" : ISODate("2016-12-31"),
     "pendingCommitments" : [ ],
     "buyWholeAsset" : false,
     "assetClasses" : [
@@ -209,7 +210,7 @@ module.exports = exports = [
     "maxPriceRate" : 1.25,
     "maxInvestmentPerLoan" : 25,
     "status" : "blank",
-    "expired" : "2016-12-31",
+    "expired" : ISODate("2016-12-31"),
     "pendingCommitments" : [ ],
     "buyWholeAsset" : false,
     "assetClasses" : [
@@ -227,7 +228,7 @@ module.exports = exports = [
     "maxPriceRate" : 1.25,
     "maxInvestmentPerLoan" : 25,
     "status" : "blank",
-    "expired" : "2016-12-31",
+    "expired" : ISODate("2016-12-31"),
     "pendingCommitments" : [ ],
     "buyWholeAsset" : false,
     "assetClasses" : [
@@ -245,7 +246,7 @@ module.exports = exports = [
     "maxPriceRate" : 1.25,
     "maxInvestmentPerLoan" : 25,
     "status" : "blank",
-    "expired" : "2016-12-31",
+    "expired" : ISODate("2016-12-31"),
     "pendingCommitments" : [ ],
     "buyWholeAsset" : false,
     "assetClasses" : [
@@ -263,7 +264,7 @@ module.exports = exports = [
     "maxPriceRate" : 1.25,
     "maxInvestmentPerLoan" : 25,
     "status" : "blank",
-    "expired" : "2016-12-31",
+    "expired" : ISODate("2016-12-31"),
     "pendingCommitments" : [ ],
     "buyWholeAsset" : false,
     "assetClasses" : [
@@ -281,7 +282,7 @@ module.exports = exports = [
     "maxPriceRate" : 1.25,
     "maxInvestmentPerLoan" : 25,
     "status" : "blank",
-    "expired" : "2016-12-31",
+    "expired" : ISODate("2016-12-31"),
     "pendingCommitments" : [ ],
     "buyWholeAsset" : false,
     "assetClasses" : [
@@ -299,7 +300,7 @@ module.exports = exports = [
     "maxPriceRate" : 1.25,
     "maxInvestmentPerLoan" : 25,
     "status" : "blank",
-    "expired" : "2016-12-31",
+    "expired" : ISODate("2016-12-31"),
     "pendingCommitments" : [ ],
     "buyWholeAsset" : false,
     "assetClasses" : [
@@ -317,7 +318,7 @@ module.exports = exports = [
     "maxPriceRate" : 1.25,
     "maxInvestmentPerLoan" : 25,
     "status" : "blank",
-    "expired" : "2016-12-31",
+    "expired" : ISODate("2016-12-31"),
     "pendingCommitments" : [ ],
     "buyWholeAsset" : false,
     "assetClasses" : [
@@ -335,7 +336,7 @@ module.exports = exports = [
     "maxPriceRate" : 1.25,
     "maxInvestmentPerLoan" : 25,
     "status" : "blank",
-    "expired" : "2016-12-31",
+    "expired" : ISODate("2016-12-31"),
     "pendingCommitments" : [ ],
     "buyWholeAsset" : false,
     "assetClasses" : [
@@ -353,7 +354,7 @@ module.exports = exports = [
     "maxPriceRate" : 1.25,
     "maxInvestmentPerLoan" : 25,
     "status" : "blank",
-    "expired" : "2016-12-31",
+    "expired" : ISODate("2016-12-31"),
     "pendingCommitments" : [ ],
     "buyWholeAsset" : false,
     "assetClasses" : [
