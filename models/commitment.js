@@ -81,9 +81,9 @@ function Commitment__static_create(sellOffer, buyOffer, callback) {
     ;
 
     if (buyWholeAsset) {
-      c.bookValue = s.bookValue;
+      c.bookValue = round(s.bookValue);
     } else {
-      c.bookValue = f_round(b.maxInvestmentPerLoan / price.toSell);
+      c.bookValue = round(b.maxInvestmentPerLoan / price.toSell);
       if (c.bookValue - s.bookValue > 0) c.bookValue = s.bookValue;
     }
     c.investment = round(c.bookValue * price.toSell);

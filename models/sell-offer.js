@@ -143,7 +143,8 @@ function SellOffer__place(callback) {
 function SellOffer__onPlacement(callback) {
   let BuyOffer = mongoose.model('BuyOffer');
   let Commitment = mongoose.model('Commitment');
-  let s = this, commitment;
+  let s = this, commitment, buyOffer;
+  const stop = 'stop-promise-chain'
 
   let q = { // Preparing serach criteria
     status: 'placed',
@@ -166,23 +167,27 @@ function SellOffer__onPlacement(callback) {
       return BuyOffer.findOne(q).sort('updated').exec();
     })
     .then(b =>{ // if BuyOffer found -- creating commitment
-      if (!b) return callback(null, null);
+      buyOffer = b;
+      if (!b) throw stop;
       return Commitment.create(s, b);
     })
     .then(c => { // if Commitment created -- processing it through the offers
       commitment = c;
-      return c.process();
+      if (c) return c.process();
     }, e => { // if Commitment creation failed
+      if (e === stop) throw stop;
+      let b = buyOffer;
       console.log("%s <=> %s -- %s", s.assetId, b.portfolioId, e);
     })
     .then(c => { // if commitment processed successfully
-      console.log("%s: %s <=> %s -- inv: $%d, aP: $%d, bV: $%d, ]> $%d, -- %s",
+      if (c) console.log("%s: %s <=> %s -- inv: $%d, aP: $%d, bV: $%d, ]> $%d, -- %s",
         c._id, c.sellOffer.assetId, c.buyOffer.portfolioId,
         c.investment, c.assetPrice, c.bookValue,
         c.intermediaryMargin,
         c.status
       );
     }, e => {
+      if (e === stop) throw stop;
       let c = commitment;
       if (!c) console.dir(e);
       else console.log("%s: %s <=> %s -- inv: %d, aP: %d, bV: %d ]> %d -- %s: %s > %s",
@@ -197,13 +202,14 @@ function SellOffer__onPlacement(callback) {
     })
     .then(s => {
       if (s.status === 'closed' || s.bookValue === 0) {
-        return callback(null, null);
+        throw stop;
       }
       return callback(null, s);
     })
-    .catch(err => {
-      console.log(err);
-      return callback(err);
+    .catch(e => {
+      if (e === stop) return callback(null, null);
+      console.log(e);
+      return callback(e);
     });
 
 }
