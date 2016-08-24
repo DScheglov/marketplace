@@ -1,6 +1,6 @@
 'use strict';
 
-//require('schema-emit-async');
+require('schema-emit-async');
 const async = require('async');
 const assert = require('assert');
 const mongoose = require('mongoose');
@@ -8,8 +8,12 @@ const Schema = mongoose.Schema;
 const dcf = require('../lib/dcf');
 const promisify = require('../lib/promisify');
 const $cb = require('../lib/callback');
+const updated = require('./plugins/updated');
 
 const OfferStatusEnum = ['blank', 'preplaced', 'placed', 'failed', 'canceled', 'closed'];
+
+//TODO: Replace with assigning from configuration
+const MIN_BOOK_VALUE_TO_BE_SOLD = 500;
 
 const SellOfferSchema = new Schema({
   trader: {type: Schema.Types.ObjectId, ref: 'Trader', required: true},
@@ -18,29 +22,33 @@ const SellOfferSchema = new Schema({
   assetClass: {type: String, required: true},
   bookValue: {type: Number, required: true},
   totalAssetBookValue: {type: Number, required: true},
+  minBookValue: {type: Number, required: true, default: MIN_BOOK_VALUE_TO_BE_SOLD},
   bookDate: {type: Date, required: true},
   minPriceRate: {type: Number, required: true},
   maxSharedAPR: {type: Number, required: true},
   dividable: {type: Boolean, 'default': true},
   status: {type: String, enum: OfferStatusEnum, required: true},
   expired: {type: Date, required: true},
-  updated: {type: Date, 'default': Date.now},
+  lastCommitmentDateTime: {type: Date, 'default': Date.now},
   relativeFlows: [{value: Number, date: Date}],
   cachedPrices: Schema.Types.Mixed,
   traders: [{type: Schema.Types.ObjectId, ref: 'Trader'}],
   pendingCommitments: [{type: Schema.Types.ObjectId, ref: 'Commitment'}]
 });
+SellOfferSchema.plugin(updated, {index: 1});
 
 SellOfferSchema.index('assetClass');
 SellOfferSchema.index({'status': 1, 'expired': 1});
 SellOfferSchema.index('traders');
 SellOfferSchema.index('pendingCommitments');
-SellOfferSchema.index('updated');
 
 SellOfferSchema.methods.getPrice = SellOffer__getPrice;
 SellOfferSchema.methods.place = SellOffer__place;
 SellOfferSchema.virtual('assetPartRatio')
   .get(SellOfferSchema__getAssetPartRatio);
+
+SellOfferSchema.when('placement', SellOffer__onPlacement);
+SellOfferSchema.pre('validate', SellOfferSchema__preValidate);
 
 const SellOffer = mongoose.model('SellOffer', SellOfferSchema);
 
@@ -49,7 +57,7 @@ module.exports = exports = {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Implemetation
+// Implementation
 //
 
 const days = dcf.days;
@@ -95,7 +103,6 @@ function normalizeRate(rate, rateType) {
   }
 }
 
-
 /**
  * SellOffer__place - description
  *
@@ -109,113 +116,48 @@ function SellOffer__place(callback) {
     return promisify(SellOffer__place, this, arguments);
   };
 
-  let BuyOffer = mongoose.model('BuyOffer');
-  let Commitment = mongoose.model('Commitment');
-  let s = this, commitment;
-  const stop = 'stop';
-  const nextOffer = 'nextOffer';
-
+  let s = this;
   try {
     assert.notEqual(s.status, 'closed');
     assert.ok(s.bookValue > 0);
-  } catch (e) {
+  } catch(err) {
     return callback(
       new Error('Status of SellOffer doesn\'t allow to place it on marketplace')
     );
   };
 
-  let q = { // Preparing serach criteria
-    status: 'placed',
-    assetClasses: s.assetClass,
-    expired: {$gt: new Date()},
-    intermediaryAPR: {$lte: s.maxSharedAPR},
-    trader: {$nin: s.traders.concat(s.trader)}
-  };
+  this.emitAsync('placement', this, onEnd);
 
-  // if the Asset is not dividable and it is still whole
-  // we should find Buy-Offers that buys whole loans only
-  if (!s.dividable && s.assetPartRatio === 1) {
-    q.buyWholeAsset = true;
-  };
-
-  let commCb = (s, b, nx, e, c) => {
-    if (e) {
-      console.log('%s (bV: %d) <=> %s: %s',
-        s.assetId, s.bookValue, b.portfolioId, e.message
-      )
-      return nx(nextOffer);
+  function onEnd(err, updated) {
+    if (err) {
+      releaseLockedOffers();
+      return callback(err);
     }
-    nx(null, c);
+    if (updated && updated.length && updated[0]) {
+      return updated[0].emitAsync('placement', updated[0], onEnd);
+    }
+
+    releaseLockedOffers()
+
+    if (s.status === 'preplaced') {
+      s.status = 'placed';
+      s.updated = new Date();
+      return s.save(callback);
+    }
+
+    return callback(null, s);
   }
 
-  async.waterfall([
-    function(next) {
-      s.status = 'preplaced';
-      return s.save(next);
+  function releaseLockedOffers() {
+    mongoose.model('BuyOffer').update({
+      lockedBy: s._id
+    }, {
+      $set: {lockedBy: null}
     },
-    function(ss, next) {
-      next = $cb(arguments);
-      return BuyOffer.find(q).sort('updated').exec(next);
-    },
-    function(offers, next) {
-      next = $cb(arguments);
-      return async.eachSeries(offers,
-        function (b, cb) {
-          cb = $cb(arguments);
-          async.waterfall([
-            function(nx){
-              nx = $cb(arguments);
-              Commitment.create(s, b, commCb.bind(null, s, b, nx));
-            },
-            function(c, nx) {
-              nx = $cb(arguments);
-              if (!c) nx(nextOffer);
-              return c.process(commCb.bind(null, s, b, nx));
-            },
-            function(c, nx) {
-              nx = $cb(arguments);
-              console.log('%s(bV: %d;) <=> %s(mxI: %d;): inv: %d; bV: %d;',
-                c.assetId, s.bookValue,
-                c.portfolioId, b.maxInvestmentPerLoan,
-                c.investment, c.bookValue
-              );
-              nx()
-            },
-            function(nx) {
-              nx = $cb(arguments);
-              return SellOffer.findById(s._id).exec(nx);
-            },
-            function(ss, nx) {
-              nx = $cb(arguments);
-              s = ss;
-              if (s.status === 'closed' || s.bookValue === 0) nx(stop);
-              nx();
-            }
-          ], e => {
-            if (e === nextOffer) return cb();
-            if (e && e !== stop) console.dir(e);
-            return cb(e);
-          });
-        }, next
-      )
-    }
-  ], err => {
-    if (err && err !== stop) {
-      console.dir(err);
-      return callback(err);
-    };
-    SellOffer.findById(s._id).then(s => {
-      if (s.status === 'preplaced') {
-        s.status = 'placed';
-        s.updated = new Date();
-        return s.save(callback);
-      }
-      return callback(null, s);
-    })
-  });
+    {multi: true}, ()=>{}); // we will not be waiting till this update happened
+  }
 
 }
-
 
 /**
  * SellOffer__onPlacement - trys to find eligible BuyOffer and to
@@ -235,7 +177,8 @@ function SellOffer__onPlacement(callback) {
     assetClasses: s.assetClass,
     expired: {$gt: new Date()},
     intermediaryAPR: {$lte: s.maxSharedAPR},
-    trader: {$nin: s.traders.concat(s.trader)}
+    trader: {$nin: s.traders.concat(s.trader)},
+    lockedBy: null
   };
 
   // if the Asset is not dividable and it is still whole
@@ -246,53 +189,63 @@ function SellOffer__onPlacement(callback) {
 
   this.status = 'preplaced';
   this.updated = new Date();
-  return this.save()
-    .then(() => { // Searching for One BuyOffer
-      return BuyOffer.findOne(q).sort('updated').exec();
-    })
-    .then(b =>{ // if BuyOffer found -- creating commitment
+  return BuyOffer.findOneAndUpdate(q, {
+    $set: {
+      lockedBy: s._id
+    }
+  }, {new: 1}).sort('lastCommitmentDateTime').exec(
+    function (err, b) {
+      if (err) {
+        console.dir(err);
+        return callback(err);
+      };
       if (!b) return callback(null, null);
-      return Commitment.create(s, b);
-    })
-    .then(c => { // if Commitment created -- processing it through the offers
-      commitment = c;
-      return c.process();
-    }, e => { // if Commitment creation failed
-      console.log("%s <=> %s -- %s", s.assetId, b.portfolioId, e);
-    })
-    .then(c => { // if commitment processed successfully
-      console.log("%s: %s <=> %s -- inv: $%d, aP: $%d, bV: $%d, ]> $%d, -- %s",
-        c._id, c.sellOffer.assetId, c.buyOffer.portfolioId,
-        c.investment, c.assetPrice, c.bookValue,
-        c.intermediaryMargin,
-        c.status
-      );
-    }, e => {
-      let c = commitment;
-      if (!c) console.dir(e);
-      else console.log("%s: %s <=> %s -- inv: %d, aP: %d, bV: %d ]> %d -- %s: %s > %s",
-        c._id, c.sellOffer.assetId, c.buyOffer.portfolioId,
-        c.investment, c.assetPrice, c.bookValue,
-        c.intermediaryMargin,
-        c.status, c.statusDescription, e
-      )
-    })
-    .then(() => {
-      return SellOffer.findById(s._id);
-    })
-    .then(s => {
-      if (s.status === 'closed' || s.bookValue === 0) {
-        return callback(null, null);
+      let c;
+      try {
+        c = Commitment.create(s, b);
+      } catch(e) {
+        console.dir(e);
+        return callback(null, s);
       }
-      return callback(null, s);
-    })
-    .catch(err => {
-      console.log(err);
-      return callback(err);
-    });
+      c.process(function(err, c) {
+        if (err) console.dir(err);
+        if (c) console.log(
+          "%s: %s <=> %s: inv: $%d; aP: %d; bV: %d; mrg: %d; s.bV: %d; -- %s",
+          c._id, c.sellOffer.assetId, c.buyOffer.portfolioId,
+          c.investment, c.assetPrice, c.bookValue,
+          c.intermediaryMargin, s.bookValue,
+          c.status
+        );
+        if (s.bookValue === 0 || s.status === 'closed') {
+          return callback(null, null);
+        }
+        return callback(null, s);
+      });
+    }
+  );
 
 }
 
 function SellOfferSchema__getAssetPartRatio() {
   return this.bookValue / this.totalAssetBookValue;
 }
+
+function SellOfferSchema__preValidate(next) {
+  let s = this;
+
+  let isCommitmentAllowed = (
+    ['preplaced', 'placed'].indexOf(s.status) >= 0
+  );
+
+  if (s.isModified('bookValue') && !isCommitmentAllowed) {
+    return next(
+      new Error('The status of the Sell Offers doesn\'t allow to make commitments')
+    );
+  };
+
+  if (s.bookValue === 0 && s.status !== 'closed') {
+    s.status = 'closed';
+  };
+
+  next();
+};

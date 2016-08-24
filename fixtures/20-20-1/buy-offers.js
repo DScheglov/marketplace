@@ -19,7 +19,7 @@ module.exports = exports = [
       "IL;EUR;B"
     ],
     "__v" : 0,
-    "expired" : ISODate("2016-08-22")
+    "expired" : ISODate("2016-12-31")
   }, {
     "_id" : ObjectId("57b2e4ff7db03c00cd5a9dcc"),
     "trader" : ObjectId("57b2e3ef7db03c00cd5a9db9"),
@@ -37,7 +37,7 @@ module.exports = exports = [
       "IL;EUR;B"
     ],
     "__v" : 0,
-    "expired" : ISODate("2016-08-22")
+    "expired" : ISODate("2016-12-31")
   }, {
     "_id" : ObjectId("57b3058f8cff26f1d0b5050f"),
     "trader" : ObjectId("57b2e3ef7db03c00cd5a9db9"),

@@ -1,5 +1,6 @@
 'use strict';
 const mongoose = require('mongoose');
+const updated = require('./plugins/updated');
 
 const Schema = mongoose.Schema;
 
@@ -17,9 +18,12 @@ const BuyOfferSchema = new Schema({
   buyWholeAsset: {type: Boolean, 'default': false},
   status: {type: String, enum: OfferStatusEnum, required: true},
   expired: {type: Date, required: true},
-  updated: {type: Date, 'default': Date.now},
-  pendingCommitments: [{type: Schema.Types.ObjectId, ref: 'Commitment'}]
+  lastCommitmentDateTime: {type: Date, 'default': Date.now},
+  pendingCommitments: [{type: Schema.Types.ObjectId, ref: 'Commitment'}],
+  lockedBy: {type: Schema.Types.ObjectId, ref: 'SellOffer', 'default': null}
 });
+BuyOfferSchema.plugins(updated, {index: 1});
+
 BuyOfferSchema.index('trader');
 BuyOfferSchema.index('assetClasses');
 BuyOfferSchema.index('intermediaryAPR');
@@ -27,6 +31,8 @@ BuyOfferSchema.index({'status': 1, 'expired': 1});
 BuyOfferSchema.index('updated');
 BuyOfferSchema.index('pendingCommitments');
 BuyOfferSchema.index('buyWholeAsset');
+BuyOfferSchema.index('lockedBy');
+BuyOfferSchema.index('lastCommitmentDateTime');
 
 const BuyOffer = mongoose.model('BuyOffer', BuyOfferSchema);
 
