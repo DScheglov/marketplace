@@ -9,10 +9,11 @@ const dcf = require('../lib/dcf');
 const promisify = require('../lib/promisify');
 const $cb = require('../lib/callback');
 const updated = require('./plugins/updated');
+const logger = require('../lib/logger')(module);
 
 const OfferStatusEnum = ['blank', 'preplaced', 'placed', 'failed', 'canceled', 'closed'];
 
-//TODO: Replace with assigning from configuration
+// TODO: Replace with assigning from configuration
 const MIN_BOOK_VALUE_TO_BE_SOLD = 500;
 
 const SellOfferSchema = new Schema({
@@ -117,8 +118,14 @@ function SellOffer__place(callback) {
   };
 
   let s = this;
+
+  logger.info(
+    'Placing Sell-offer <%s>: Asset: %s; bV: %d; tBV: %d;',
+    s._id, s.assetId, s.bookValue, s.totalAssetBookValue
+  );
+
   try {
-    assert.notEqual(s.status, 'closed');
+    assert.ok(['blank', 'placed'].indexOf(s.status) >= 0);
     assert.ok(s.bookValue > 0);
   } catch(err) {
     return callback(
@@ -126,36 +133,61 @@ function SellOffer__place(callback) {
     );
   };
 
-  this.emitAsync('placement', this, onEnd);
+  s.status = 'preplaced';
+  return s.save(e => {
+    logger.info('\tStatus changed to: %s', s.status);
+    logger.info('\tEmmitting =placement= event');
+    if (e) return callback(e);
+    return this.emitAsync('placement', s, onEnd);
+  });
 
   function onEnd(err, updated) {
+
     if (err) {
+      logger.error(err.message);
       releaseLockedOffers();
       return callback(err);
-    }
-    if (updated && updated.length && updated[0]) {
-      return updated[0].emitAsync('placement', updated[0], onEnd);
-    }
+    };
 
-    releaseLockedOffers()
+    logger.info(
+      '\tSell-offer status: %s; bV: %d; Tr: %d',
+      s.status, s.bookValue, s.traders.length
+    );
+
+    if (updated && updated.length && updated[0]) {
+      // continue matchhing buy-offers
+      logger.info('\tEmmitting =placement= event');
+      return s.emitAsync('placement', s, onEnd);
+    }; // else all buy-offers found and we have to stop matching
+
+    logger.info(
+      '\tSell-offer placement complited. Total buyers number: %d',
+      s.traders.length
+    )
+    releaseLockedOffers();
 
     if (s.status === 'preplaced') {
+      logger.info('\tChanging status of Sell-offer to: placed');
       s.status = 'placed';
       s.updated = new Date();
       return s.save(callback);
-    }
+    };
 
     return callback(null, s);
   }
 
   function releaseLockedOffers() {
-    mongoose.model('BuyOffer').update({
-      lockedBy: s._id
-    }, {
-      $set: {lockedBy: null}
-    },
-    {multi: true}, ()=>{}); // we will not be waiting till this update happened
-  }
+    logger.info('\tUnlocking buy-offers that were not unlocked by commitments');
+    mongoose.model('BuyOffer').update( // Release Locked Buy-Offers
+      { lockedBy: s._id },
+      { $set: {lockedBy: null} },
+      { multi: true },
+      (e, r) => {
+        if (e) return logger.error('\t'+e.message);
+        logger.info('\tUnlocked %d offer(s)', r.nModified);
+      } // we will not be waiting for this update
+    );
+  };
 
 }
 
@@ -187,8 +219,8 @@ function SellOffer__onPlacement(callback) {
     q.buyWholeAsset = true;
   };
 
-  this.status = 'preplaced';
-  this.updated = new Date();
+  logger.info('\tSearching for Buy-offers');
+
   return BuyOffer.findOneAndUpdate(q, {
     $set: {
       lockedBy: s._id
@@ -196,34 +228,42 @@ function SellOffer__onPlacement(callback) {
   }, {new: 1}).sort('lastCommitmentDateTime').exec(
     function (err, b) {
       if (err) {
-        console.dir(err);
+        logger.error('\t\t' + err.message);
         return callback(err);
       };
-      if (!b) return callback(null, null);
+      if (!b) {
+        logger.info('\t\tNO buy-offer found.')
+        return callback(null, null);
+      };
+      logger.info(
+        '\t\tBuy-offer <%s> found. Portfolio: %s; V: %d; mxI: %d',
+        b._id, b.portfolioId, b.volume, b.maxInvestmentPerLoan
+      )
       let c;
       try {
         c = Commitment.create(s, b);
+        logger.info(
+          '\t\tCommitment created. Inv: %d; bV: %d; aP: %d; Mrg: %d',
+          c.investment, c.bookValue, c.assetPrice, c.intermediaryMargin
+        );
       } catch(e) {
-        console.dir(e);
+        logger.error('\t\t'+e.message);
         return callback(null, s);
       }
       c.process(function(err, c) {
-        if (err) console.dir(err);
-        if (c) console.log(
-          "%s: %s <=> %s: inv: $%d; aP: %d; bV: %d; mrg: %d; s.bV: %d; -- %s",
-          c._id, c.sellOffer.assetId, c.buyOffer.portfolioId,
-          c.investment, c.assetPrice, c.bookValue,
-          c.intermediaryMargin, s.bookValue,
-          c.status
-        );
+        if (err) logger.error('\t\t'+err.message);
+        if (c) logger.info("\t\tCommitment status: %s", c.status);
         if (s.bookValue === 0 || s.status === 'closed') {
           return callback(null, null);
         }
+        logger.info(
+          '\t\tBuy-offer status: %s. V: %d',
+          b.status, b.volume
+        );
         return callback(null, s);
       });
     }
   );
-
 }
 
 function SellOfferSchema__getAssetPartRatio() {

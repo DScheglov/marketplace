@@ -22,7 +22,7 @@ const BuyOfferSchema = new Schema({
   pendingCommitments: [{type: Schema.Types.ObjectId, ref: 'Commitment'}],
   lockedBy: {type: Schema.Types.ObjectId, ref: 'SellOffer', 'default': null}
 });
-BuyOfferSchema.plugins(updated, {index: 1});
+BuyOfferSchema.plugin(updated, {index: 1});
 
 BuyOfferSchema.index('trader');
 BuyOfferSchema.index('assetClasses');

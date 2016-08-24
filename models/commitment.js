@@ -5,7 +5,7 @@ const async = require('async');
 const rounding = require('../rounding');
 const promisify = require('../lib/promisify');
 const $cb = require('../lib/callback');
-const updated = required('./plugins/updated');
+const updated = require('./plugins/updated');
 
 const Schema = mongoose.Schema;
 
