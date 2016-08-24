@@ -20,6 +20,13 @@ const BuyOfferSchema = new Schema({
   updated: {type: Date, 'default': Date.now},
   pendingCommitments: [{type: Schema.Types.ObjectId, ref: 'Commitment'}]
 });
+BuyOfferSchema.index('trader');
+BuyOfferSchema.index('assetClasses');
+BuyOfferSchema.index('intermediaryAPR');
+BuyOfferSchema.index({'status': 1, 'expired': 1});
+BuyOfferSchema.index('updated');
+BuyOfferSchema.index('pendingCommitments');
+BuyOfferSchema.index('buyWholeAsset');
 
 const BuyOffer = mongoose.model('BuyOffer', BuyOfferSchema);
 

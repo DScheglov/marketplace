@@ -19,11 +19,13 @@
     "async": "^1.5.2",
     "body-parser": "^1.14.1",
     "express": "^4.13.3",
+    "express-winston": "^2.0.0",
     "fin-rounds": "^0.1.0",
     "merest": "*",
     "method-override": "^2.3.5",
     "mongoose": "^4.5.9",
-    "schema-emit-async": "^0.2.2"
+    "schema-emit-async": "^0.2.2",
+    "winston": "^2.2.0"
   },
   "devDependencies": {
     "command-line-args": "^3.0.1",

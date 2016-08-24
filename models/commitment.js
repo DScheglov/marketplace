@@ -2,7 +2,7 @@
 
 const mongoose = require('mongoose');
 const async = require('async');
-const Round = require('fin-rounds').Round;
+const rounding = require('../rounding');
 const promisify = require('../lib/promisify');
 
 const Schema = mongoose.Schema;
@@ -34,11 +34,9 @@ module.exports = exports = {
   Commitment: Commitment
 }
 
-
-// Creating rounding function with banker's algorithm and
-// 2-digits after coma precision
-const round = new Round('bank', 2);
-const f_round = new Round('floor', 2);
+const round = rounding.round;
+const f_round = rounding.f_round;
+const c_round = rounding.c_round;
 
 function Commitment__static_create(sellOffer, buyOffer, callback) {
 
@@ -81,12 +79,12 @@ function Commitment__static_create(sellOffer, buyOffer, callback) {
     ;
 
     if (buyWholeAsset) {
-      c.bookValue = round(s.bookValue);
+      c.bookValue = s.bookValue;
     } else {
       c.bookValue = f_round(b.maxInvestmentPerLoan / price.toSell);
-      if (c.bookValue - s.bookValue > 0) c.bookValue = round(s.bookValue);
+      if (c.bookValue - s.bookValue > 0) c.bookValue = s.bookValue;
     }
-    c.investment = round(c.bookValue * price.toSell);
+    c.investment = c_round(c.bookValue * price.toSell);
 
     if (!b.buyWholeAsset && c.investment - b.maxInvestmentPerLoan > 0) {
       throw new Error('Whole asset purchase violates max investment per loan');
@@ -96,7 +94,7 @@ function Commitment__static_create(sellOffer, buyOffer, callback) {
       if (!s.dividable) {
         throw new Error('Not enough investment funds to buy asset');
       }
-      c.investment = round(b.volume);
+      c.investment = b.volume;
       c.bookValue = round(this.investment / price.toSell);
     }
 

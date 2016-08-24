@@ -7,8 +7,8 @@ module.exports = exports = [
     "trader": ObjectId("57b1ed6598b8be7cae69c365"),
     "assetId": "loan-123",
     "assetClass": "IL;EUR;A",
-    "bookValue": 800,
-    "totalAssetBookValue": 800,
+    "bookValue": 80000,
+    "totalAssetBookValue": 80000,
     "bookDate": ISODate("2016-08-15"),
     "minPriceRate": 1.1345,
     "maxSharedAPR": 0.15,
@@ -29,5 +29,58 @@ module.exports = exports = [
       {"value": 0.120, "date": ISODate("2017-07-14")},
       {"value": 0.120, "date": ISODate("2017-08-14")}
     ]
-  }
+  }, {
+      "trader": ObjectId("57b1ed6598b8be7cae69c365"),
+      "assetId": "loan-5432",
+      "assetClass": "IL;EUR;A",
+      "bookValue": 50000,
+      "totalAssetBookValue": 50000,
+      "bookDate": ISODate("2016-08-15"),
+      "minPriceRate": 1.1345,
+      "maxSharedAPR": 0.15,
+      "dividable": true,
+      "status": "blank",
+      "expired": ISODate("2016-09-14"),
+      "relativeFlows": [
+        {"value": 0.120, "date": ISODate("2016-09-14")},
+        {"value": 0.120, "date": ISODate("2016-10-14")},
+        {"value": 0.120, "date": ISODate("2016-11-14")},
+        {"value": 0.120, "date": ISODate("2016-12-14")},
+        {"value": 0.120, "date": ISODate("2017-01-14")},
+        {"value": 0.120, "date": ISODate("2017-02-14")},
+        {"value": 0.120, "date": ISODate("2017-03-14")},
+        {"value": 0.120, "date": ISODate("2017-04-14")},
+        {"value": 0.120, "date": ISODate("2017-05-14")},
+        {"value": 0.120, "date": ISODate("2017-06-14")},
+        {"value": 0.120, "date": ISODate("2017-07-14")},
+        {"value": 0.120, "date": ISODate("2017-08-14")}
+      ]
+    }, {
+        "trader": ObjectId("57b1ed6598b8be7cae69c365"),
+        "assetId": "loan-99882",
+        "assetClass": "IL;EUR;A",
+        "bookValue": 43212,
+        "totalAssetBookValue": 43212,
+        "bookDate": ISODate("2016-08-15"),
+        "minPriceRate": 1.1345,
+        "maxSharedAPR": 0.15,
+        "dividable": true,
+        "status": "blank",
+        "expired": ISODate("2016-09-14"),
+        "relativeFlows": [
+          {"value": 0.120, "date": ISODate("2016-09-14")},
+          {"value": 0.120, "date": ISODate("2016-10-14")},
+          {"value": 0.120, "date": ISODate("2016-11-14")},
+          {"value": 0.120, "date": ISODate("2016-12-14")},
+          {"value": 0.120, "date": ISODate("2017-01-14")},
+          {"value": 0.120, "date": ISODate("2017-02-14")},
+          {"value": 0.120, "date": ISODate("2017-03-14")},
+          {"value": 0.120, "date": ISODate("2017-04-14")},
+          {"value": 0.120, "date": ISODate("2017-05-14")},
+          {"value": 0.120, "date": ISODate("2017-06-14")},
+          {"value": 0.120, "date": ISODate("2017-07-14")},
+          {"value": 0.120, "date": ISODate("2017-08-14")}
+        ]
+      }
+
 ];

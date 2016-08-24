@@ -31,11 +31,16 @@ const SellOfferSchema = new Schema({
   pendingCommitments: [{type: Schema.Types.ObjectId, ref: 'Commitment'}]
 });
 
+SellOfferSchema.index('assetClass');
+SellOfferSchema.index({'status': 1, 'expired': 1});
+SellOfferSchema.index('traders');
+SellOfferSchema.index('pendingCommitments');
+SellOfferSchema.index('updated');
+
 SellOfferSchema.methods.getPrice = SellOffer__getPrice;
 SellOfferSchema.methods.place = SellOffer__place;
 SellOfferSchema.virtual('assetPartRatio')
   .get(SellOfferSchema__getAssetPartRatio);
-//SellOfferSchema.when('placement', SellOffer__onPlacement);
 
 const SellOffer = mongoose.model('SellOffer', SellOfferSchema);
 
@@ -133,6 +138,16 @@ function SellOffer__place(callback) {
     q.buyWholeAsset = true;
   };
 
+  let commCb = (s, b, nx, e, c) => {
+    if (e) {
+      console.log('%s (bV: %d) <=> %s: %s',
+        s.assetId, s.bookValue, b.portfolioId, e.message
+      )
+      return nx(nextOffer);
+    }
+    nx(null, c);
+  }
+
   async.waterfall([
     function(next) {
       s.status = 'preplaced';
@@ -150,34 +165,20 @@ function SellOffer__place(callback) {
           async.waterfall([
             function(nx){
               nx = $cb(arguments);
-              Commitment.create(s, b, (e, c) => {
-                if (e) {
-                  console.log('%s <=> %s: %s',
-                    s.assetId, b.portfolioId, e.message
-                  )
-                  return nx(nextOffer);
-                }
-                nx(null, c);
-              });
+              Commitment.create(s, b, commCb.bind(null, s, b, nx));
             },
             function(c, nx) {
               nx = $cb(arguments);
               if (!c) nx(nextOffer);
-              return c.process((e, c) => {
-                if (e) {
-                  console.log('%s <=> %s: %s',
-                    s.assetId, b.portfolioId, e.message
-                  )
-                  return nx(nextOffer);
-                }
-                nx(null, c);
-              });
+              return c.process(commCb.bind(null, s, b, nx));
             },
             function(c, nx) {
               nx = $cb(arguments);
-              console.log('%s <=> %s: inv: %d; bV: %d;',
-                c.assetId, c.portfolioId, c.investment, c.bookValue
-              )
+              console.log('%s(bV: %d;) <=> %s(mxI: %d;): inv: %d; bV: %d;',
+                c.assetId, s.bookValue,
+                c.portfolioId, b.maxInvestmentPerLoan,
+                c.investment, c.bookValue
+              );
               nx()
             },
             function(nx) {

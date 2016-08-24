@@ -1,0 +1,35 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-2">
+      <!--Sidebar content-->
+
+      <p>
+        Search:
+        <input ng-model="$ctrl.query" />
+      </p>
+
+      <p>
+        Sort by:
+        <select ng-model="$ctrl.orderProp">
+          <option value="updated-">Last updated</option>
+          <option value="upated">First updated</option>
+        </select>
+      </p>
+
+    </div>
+    <div class="col-md-10">
+      <!--Body content-->
+
+      <ul>
+        <li ng-repeat="offer in $ctrl.offers | filter:$ctrl.query | orderBy:$ctrl.orderProp">
+          <a href="#!/sell-offers/{{offer.id}}">{{offer.assetId}}</a>
+          {{offer.status}} > Book Value: {{offer.bookValue}} of {{offer.totalAssetBookValue}}
+          > Commited: {{100*(1-offer.bookValue/offerTotalAssetBookValue)}} by
+          {{offer.traders.length}} trader(s)
+          >Last update: {{offer.updated}}
+        </li>
+      </ul>
+
+    </div>
+  </div>
+</div>
