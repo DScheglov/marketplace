@@ -29,6 +29,7 @@ CommitmentSchema.plugin(updated, {index: 1});
 
 CommitmentSchema.statics.create = Commitment__static_create;
 CommitmentSchema.methods.process = Commitment__process;
+CommitmentSchema.methods.cancel = Commitment__cancel;
 
 const Commitment = mongoose.model('Commitment', CommitmentSchema)
 
@@ -172,6 +173,46 @@ function Commitment__process(callback) {
 
   return async.waterfall(actions, function(err) {
     if (err) return callback(null);
+    return callback(null, c);
+  });
+
+};
+
+function Commitment__cancel(callback) {
+  callback = arguments[arguments.length - 1];
+
+  if (!callback || !(callback instanceof Function)) {
+    return promisify(Commitment__cancel, this, arguments);
+  };
+
+  let c = this;
+
+  if (c.status !=='made') {
+    return callback(
+      new Error('Commitment was not made, so it couldn\'t be canceled')
+    );
+  };
+
+  const SellOffer = mongoose.model('SellOffer');
+  const BuyOffer = mongoose.model('BuyOffer');
+
+  c.status = 'canceled';
+
+  c.save(function (err, _c) {
+    if (err) return callback(err);
+    SellOffer.update({
+      _id: c.sellOffer,
+      status: 'placed'
+    }, {
+      $inc: {bookValue: c.bookValue},
+      $pull: {traders: c.buyer}
+    }, ()=>{});
+    BuyOffer.update({
+      _id: c.buyOffer,
+      status: 'placed'
+    }, {
+      $inc: {volume: c.investment}
+    }, ()=>{});
     return callback(null, c);
   });
 

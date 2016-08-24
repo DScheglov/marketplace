@@ -11,7 +11,7 @@ const $cb = require('../lib/callback');
 const updated = require('./plugins/updated');
 const logger = require('../lib/logger')(module);
 
-const OfferStatusEnum = ['blank', 'preplaced', 'placed', 'failed', 'canceled', 'closed'];
+const OfferStatusEnum = ['blank', 'preplaced', 'placed', 'failed', 'canceling', 'canceled', 'closed'];
 
 // TODO: Replace with assigning from configuration
 const MIN_BOOK_VALUE_TO_BE_SOLD = 500;
@@ -45,6 +45,7 @@ SellOfferSchema.index('pendingCommitments');
 
 SellOfferSchema.methods.getPrice = SellOffer__getPrice;
 SellOfferSchema.methods.place = SellOffer__place;
+SellOfferSchema.methods.cancel = SellOffer__cancel;
 SellOfferSchema.virtual('assetPartRatio')
   .get(SellOfferSchema__getAssetPartRatio);
 
@@ -289,3 +290,36 @@ function SellOfferSchema__preValidate(next) {
 
   next();
 };
+
+
+function SellOffer__cancel(callback) {
+  callback = arguments[arguments.length - 1];
+
+  if (!callback || !(callback instanceof Function)) {
+    return promisify(SellOffer__cancel, this, arguments);
+  };
+
+  let s = this;
+
+  if (s.status != 'placed') return callback(
+    new Error('Status of sell-offer doesn\'t allow to cancel it')
+  );
+
+  s.status = 'canceling';
+  s.save((e, _s) => {
+    if (e) return callback(e);
+    mongoose.model('Commitment').find({
+      sellOffer: s._id,
+      status: 'made'
+    }, (e, cs) => {
+      if (e) return callback(e);
+      async.eachSeries(cs, function(c, n) {
+        c.cancel(n)
+      }, e => {
+        if (e) return callback(e);
+        s.status = 'canceled';
+        return s.save(callback);
+      });
+    });
+  });
+}
