@@ -278,7 +278,7 @@ function SellOfferSchema__preValidate(next) {
     ['preplaced', 'placed'].indexOf(s.status) >= 0
   );
 
-  if (s.isModified('bookValue') && !isCommitmentAllowed) {
+  if (s.isModified('bookValue') && !isCommitmentAllowed && !s.isNew) {
     return next(
       new Error('The status of the Sell Offers doesn\'t allow to make commitments')
     );

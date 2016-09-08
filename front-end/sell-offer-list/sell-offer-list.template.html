@@ -22,11 +22,21 @@
 
       <ul>
         <li ng-repeat="offer in $ctrl.offers | filter:$ctrl.query | orderBy:$ctrl.orderProp">
-          <a href="#!/sell-offers/{{offer._id}}">{{offer.assetId}}</a>
-          {{offer.status}} > Book Value: {{offer.bookValue}} of {{offer.totalAssetBookValue}}
-          > Commited: {{100*(1-offer.bookValue/offer.totalAssetBookValue)}}% by
-          {{offer.traders.length}} trader(s)
-          >Last update: {{offer.updated}}
+          <a href="#!/sell-offers/{{offer._id}}">
+            <h4>
+              [{{offer.assetClass}}]
+              {{offer.assetId}}:
+              {{offer.bookValue|money}}
+              < {{offer.maxSharedAPR|percents}}
+            </h4>
+          </a>
+
+          (<small>total:</small> <b>{{offer.totalAssetBookValue|money}}</b>,
+          {{(1-offer.bookValue/offer.totalAssetBookValue)|percents}},
+          {{offer.traders.length}} <small>trader(s)</small>)
+          <b>{{offer.status}}</b>
+          <small>Updated:</small> {{offer.updated}}
+
         </li>
       </ul>
 
